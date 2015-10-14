@@ -51,7 +51,7 @@ class AntiCSRF
     const FORM_TOKEN = '_CSRF_TOKEN';
     const SESSION_INDEX = 'CSRF';
     const HASH_ALGO = 'sha256';
-    
+
     public static $recycle_after = 65535;
     public static $hmac_ip = true;
     public static $expire_old = false;
@@ -59,71 +59,71 @@ class AntiCSRF
     /**
      * Insert a CSRF token to a form
      *
-     * @param $lockto This CSRF token is only valid for this HTTP request endpoint
-     * @param $echo if true, echo instead of returning
+     * @param string $lockto This CSRF token is only valid for this HTTP request endpoint
+     * @param boolean $echo if true, echo instead of returning
      * @return string
      */
     public static function insertToken($lockto = null, $echo = true)
     {
 	    $token_array = self::getTokenArray($lockto);
-	    
+
 	    $ret = implode( array_map( function( $key, $value ) {
 		    return "<!--\n-->".
 	            "<input type=\"hidden\"".
 	            " name=\"".$key."\"".
-	            " value=\"".self::noHTML($value)."\"".
+	            " value=\"".AntiCSRF::noHTML($value)."\"".
 	            " />";
 	    }, array_keys($token_array), $token_array) );
-	    
+
 	    if( $echo ) {
 		    echo $ret;
-		    return;
+		    return null;
 	    }
         return $ret;
     }
-	
+
 	/**
 	 * Retrieve a token array for unit testing endpoints
-	 * 
+	 *
 	 * @return array
 	 */
 	public static function getTokenArray($lockto = null)
 	{
         if (!isset($_SESSION[self::SESSION_INDEX])) {
-            $_SESSION[self::SESSION_INDEX] = [];
+            $_SESSION[self::SESSION_INDEX] = array();
         }
 
         if (empty($lockto)) {
-            $lockto = isset($_SERVER['REQUEST_URI']) 
+            $lockto = isset($_SERVER['REQUEST_URI'])
                 ? $_SERVER['REQUEST_URI']
                 : '/';
         }
 
-        if (\preg_match('#/$#', $lockto)) {
+        if (preg_match('#/$#', $lockto)) {
             $lockto = substr($lockto, 0, strlen($lockto) - 1);
         }
 
         list($index, $token) = self::generateToken($lockto);
-        
+
         if (self::$hmac_ip !== false) {
             // Use HMAC to only allow this particular IP to send this request
-            $token = \base64_encode(
-                \hash_hmac(
+            $token = base64_encode(
+                hash_hmac(
                     self::HASH_ALGO,
                     isset($_SERVER['REMOTE_ADDR'])
                         ? $_SERVER['REMOTE_ADDR']
                         : '127.0.0.1',
-                    \base64_decode($token),
+                    base64_decode($token),
                     true
                 )
             );
         }
-        
+
         return array(
 			self::FORM_INDEX => $index,
 			self::FORM_TOKEN => $token,
 		);
-	}
+    }
 
     /**
      * Validate a request based on $_SESSION and $_POST data
@@ -134,7 +134,7 @@ class AntiCSRF
     {
         if (!isset($_SESSION[self::SESSION_INDEX])) {
             // We don't even have a session array initialized
-            $_SESSION[self::SESSION_INDEX] = [];
+            $_SESSION[self::SESSION_INDEX] = array();
             return false;
         }
 
@@ -160,7 +160,7 @@ class AntiCSRF
 
         // Which form action="" is this token locked to?
         $lockto = $_SERVER['REQUEST_URI'];
-        if (\preg_match('#/$#', $lockto)) {
+        if (preg_match('#/$#', $lockto)) {
             // Trailing slashes are to be ignored
             $lockto = substr($lockto, 0, strlen($lockto) - 1);
         }
@@ -176,13 +176,13 @@ class AntiCSRF
             $expected = $stored['token'];
         } else {
             // We mixed in the client IP address to generate the output
-            $expected = \base64_encode(
-                \hash_hmac(
+            $expected = base64_encode(
+                hash_hmac(
                     self::HASH_ALGO,
                     isset($_SERVER['REMOTE_ADDR'])
                         ? $_SERVER['REMOTE_ADDR']
                         : '127.0.0.1',
-                    \base64_decode($stored['token']),
+                    base64_decode($stored['token']),
                     true
                 )
             );
@@ -190,14 +190,14 @@ class AntiCSRF
 
         return self::hash_equals($token, $expected);
     }
-    
+
     /**
      * Use this to change the configuration settings.
      * Only use this if you know what you are doing.
-     * 
+     *
      * @param array $options
      */
-    public static function reconfigure(array $options = [])
+    public static function reconfigure(array $options = array())
     {
         foreach ($options as $opt => $val) {
             switch ($opt) {
@@ -218,23 +218,23 @@ class AntiCSRF
      */
     private static function generateToken($lockto)
     {
-        $index = \base64_encode(\random_bytes(18));
-        $token = \base64_encode(\random_bytes(32));
+        $index = base64_encode(random_bytes(18));
+        $token = base64_encode(random_bytes(32));
 
-        $_SESSION[self::SESSION_INDEX][$index] = [
-            'created' => \intval(\date('YmdHis')),
+        $_SESSION[self::SESSION_INDEX][$index] = array(
+            'created' => intval(date('YmdHis')),
             'uri' => isset($_SERVER['REQUEST_URI'])
                 ? $_SERVER['REQUEST_URI']
                 : $_SERVER['SCRIPT_NAME'],
             'token' => $token
-        ];
-        if (\preg_match('#/$#', $lockto)) {
+        );
+        if (preg_match('#/$#', $lockto)) {
             $lockto = self::subString($lockto, 0, self::stringLength($lockto) - 1);
         }
         $_SESSION[self::SESSION_INDEX][$index]['lockto'] = $lockto;
 
         self::recycleTokens();
-        return [ $index, $token ];
+        return array($index, $token);
     }
 
     /**
@@ -248,13 +248,13 @@ class AntiCSRF
             return;
         }
         // Sort by creation time
-        \uasort($_SESSION[self::SESSION_INDEX], function($a, $b) {
+        uasort($_SESSION[self::SESSION_INDEX], function($a, $b) {
             return $a['created'] - $b['created'];
         });
 
-        if (\count($_SESSION[self::SESSION_INDEX]) > self::$recycle_after) {
+        if (count($_SESSION[self::SESSION_INDEX]) > self::$recycle_after) {
             // Let's knock off the oldest one
-            \array_shift($_SESSION[self::SESSION_INDEX]);
+            array_shift($_SESSION[self::SESSION_INDEX]);
         }
     }
 
@@ -264,9 +264,13 @@ class AntiCSRF
      * @param string $untrusted
      * @return string
      */
-    private static function noHTML($untrusted)
+    public static function noHTML($untrusted)
     {
-        return \htmlentities($untrusted, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+	    $flags = ENT_QUOTES;
+	    if (PHP_VERSION_ID >= 50400) {
+		    $flags |= ENT_HTML5;
+	    }
+	    return htmlentities($untrusted, $flags, 'UTF-8');
     }
 
     /**
@@ -280,12 +284,12 @@ class AntiCSRF
      */
     private static function hash_equals($a, $b)
     {
-        if (\function_exists('\\hash_equals')) {
-            return \hash_equals($a, $b);
+        if (function_exists('hash_equals')) {
+            return hash_equals($a, $b);
         }
 
-        $nonce = \random_bytes(32);
-        return \hash_hmac('sha256', $a, $nonce) === \hash_hmac('sha256', $b, $nonce);
+        $nonce = random_bytes(32);
+        return hash_hmac('sha256', $a, $nonce) === hash_hmac('sha256', $b, $nonce);
     }
 
     /**
@@ -298,9 +302,10 @@ class AntiCSRF
      */
     private static function subString($str, $start, $length = null)
     {
-        if (\function_exists('\\mb_substr')) {
-            return \mb_substr($str, $start, $length, '8bit');
+        if (function_exists('mb_substr')) {
+            return mb_substr($str, $start, $length, '8bit');
         }
+        return substr($str, $start, $length);
     }
 
     /**
@@ -311,9 +316,9 @@ class AntiCSRF
      */
     private static function stringLength($str)
     {
-        if (\function_exists('\\mb_substr')) {
-            return \mb_strlen($str, '8bit');
+        if (function_exists('mb_substr')) {
+            return mb_strlen($str, '8bit');
         }
-        return \strlen($str);
+        return strlen($str);
     }
 }

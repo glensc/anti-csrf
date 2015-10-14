@@ -20,7 +20,7 @@ class AntiCSRFTest extends PHPUnit_Framework_TestCase
         );
         $this->assertContains("<input", $token_html);
     }
-    
+
     /**
      * @covers \Resonantcore\AntiCSRF\AntiCSRF::getTokenArray()
      */
@@ -33,9 +33,9 @@ class AntiCSRFTest extends PHPUnit_Framework_TestCase
         $this->assertFalse(
             empty($_SESSION[AntiCSRF::SESSION_INDEX])
         );
-        $this->assertSame( [
+        $this->assertSame( array(
 	        AntiCSRF::FORM_INDEX,
 	        AntiCSRF::FORM_TOKEN,
-        ], array_keys( $result ) );
+        ), array_keys( $result ) );
     }
 }
