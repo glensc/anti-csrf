@@ -267,11 +267,7 @@ class AntiCSRF
      */
     public static function noHTML($untrusted)
     {
-	    $flags = ENT_QUOTES;
-	    if (PHP_VERSION_ID >= 50400) {
-		    $flags |= ENT_HTML5;
-	    }
-	    return htmlentities($untrusted, $flags, 'UTF-8');
+	    return htmlentities($untrusted, ENT_QUOTES, 'UTF-8');
 	}
 
     /**
