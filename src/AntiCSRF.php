@@ -114,7 +114,7 @@ class AntiCSRF
                     isset($_SERVER['REMOTE_ADDR'])
                         ? $_SERVER['REMOTE_ADDR']
                         : '127.0.0.1',
-                    base64_decode($token),
+                    self::decode($token),
                     true
                 )
             );
@@ -183,7 +183,7 @@ class AntiCSRF
                     isset($_SERVER['REMOTE_ADDR'])
                         ? $_SERVER['REMOTE_ADDR']
                         : '127.0.0.1',
-                    base64_decode($stored['token']),
+                    self::decode($stored['token']),
                     true
                 )
             );
@@ -275,14 +275,39 @@ class AntiCSRF
 	}
 
     /**
-     * Encode string with base64, but strip padding.
-     * PHP base64_decode does not croak on that.
+     * Encode data into base64 url variant.
+     *
+     * base64 encoded output is modified so that the urlencode() would not be necessary:
+     * <ul>
+     * <li>use '-' instead of '+'
+     * <li>use '_' instead of '/'
+     * <li>removes padding with '='
+     * </ul>
+     *
+     * <b>NOTE</b>, this is base64 encoding variant, be sure that if you use this encoding,
+     * the other endpoint decoding your data is using the same algorithm.
+     *
+     * @link http://en.wikipedia.org/wiki/Base64#Implementations_and_history
      *
      * @param string $s
      * @return string
      */
     private static function encode($s) {
-        return rtrim(base64_encode($s), '=');
+        return rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
+    }
+
+    /**
+     * Decode data encoded by base64 url variant.
+     *
+     * NOTE: it can decode original base64_encode() safely as well
+     *
+     * @param string $s
+     * @return string
+     */
+    private static function decode($s) {
+        // NOTE: php base64_decode can handle missing padding, otherwise we would had to pad:
+        // http://qugstart.com/blog/ruby-and-rails/facebook-base64-url-decode-for-signed_request/
+        return base64_decode(strtr($s, '-_', '+/'));
     }
 
     /**
