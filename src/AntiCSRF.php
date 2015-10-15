@@ -107,7 +107,7 @@ class AntiCSRF
 
         if (self::$hmac_ip !== false) {
             // Use HMAC to only allow this particular IP to send this request
-            $token = base64_encode(
+            $token = self::encode(
                 hash_hmac(
                     self::HASH_ALGO,
                     isset($_SERVER['REMOTE_ADDR'])
@@ -176,7 +176,7 @@ class AntiCSRF
             $expected = $stored['token'];
         } else {
             // We mixed in the client IP address to generate the output
-            $expected = base64_encode(
+            $expected = self::encode(
                 hash_hmac(
                     self::HASH_ALGO,
                     isset($_SERVER['REMOTE_ADDR'])
@@ -218,8 +218,8 @@ class AntiCSRF
      */
     private static function generateToken($lockto)
     {
-        $index = base64_encode(random_bytes(18));
-        $token = base64_encode(random_bytes(32));
+        $index = self::encode(random_bytes(18));
+        $token = self::encode(random_bytes(32));
 
         $_SESSION[self::SESSION_INDEX][$index] = array(
             'created' => intval(date('YmdHis')),
@@ -271,6 +271,16 @@ class AntiCSRF
 		    $flags |= ENT_HTML5;
 	    }
 	    return htmlentities($untrusted, $flags, 'UTF-8');
+
+    /**
+     * Encode string with base64, but strip padding.
+     * PHP base64_decode does not croak on that.
+     *
+     * @param string $s
+     * @return string
+     */
+    private static function encode($s) {
+        return rtrim(base64_encode($s), '=');
     }
 
     /**
