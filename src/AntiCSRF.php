@@ -1,5 +1,6 @@
 <?php
 namespace ParagonIE\AntiCSRF;
+// vim:et
 
 /**
  * Copyright (c) 2015 Paragon Initiative Enterprises <https://paragonie.com>
@@ -271,6 +272,7 @@ class AntiCSRF
 		    $flags |= ENT_HTML5;
 	    }
 	    return htmlentities($untrusted, $flags, 'UTF-8');
+	}
 
     /**
      * Encode string with base64, but strip padding.
